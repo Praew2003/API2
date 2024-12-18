@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ฟอร์มลงทะเบียน</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f6e6f2, #e6f2f0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .registration-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+        .form-label {
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            padding: 12px 15px;
+            border: 1px solid #ced4da;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus, .form-select:focus {
+            box-shadow: 0 0 0 0.25rem rgba(230, 142, 247, 0.25);
+            border-color: #e68ef7;
+        }
+        .btn-primary {
+            background-color: #e68ef7;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #d05fea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(230, 142, 247, 0.3);
+        }
+        .alert {
+            margin-top: 20px;
+            border-radius: 12px;
+            opacity: 0.9;
+        }
+        .register-link {
+            color: #e68ef7;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        .register-link:hover {
+            color: #d05fea;
+            text-decoration: underline;
+        }
+        h2 {
+            color: #6c757d;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+        @media (max-width: 768px) {
+            .registration-container {
+                padding: 20px;
+                margin: 0 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container">
+        <div class="registration-container">
+            <h2 class="text-center">ลงทะเบียน</h2>
+            <form @submit.prevent="submitForm" novalidate>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="username" class="form-label">ชื่อผู้ใช้</label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="username" 
+                            v-model="formData.username" 
+                            :class="{'is-invalid': validationErrors.username}"
+                            required
+                        >
+                        <div class="invalid-feedback" v-if="validationErrors.username">
+                            {{ validationErrors.username }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">อีเมล</label>
+                        <input 
+                            type="email" 
+                            class="form-control" 
+                            id="email" 
+                            v-model="formData.email"
+                            :class="{'is-invalid': validationErrors.email}"
+                            required
+                        >
+                        <div class="invalid-feedback" v-if="validationErrors.email">
+                            {{ validationErrors.email }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="password" class="form-label">รหัสผ่าน</label>
+                        <input 
+                            type="password" 
+                            class="form-control" 
+                            id="password" 
+                            v-model="formData.password"
+                            :class="{'is-invalid': validationErrors.password}"
+                            required
+                        >
+                        <div class="invalid-feedback" v-if="validationErrors.password">
+                            {{ validationErrors.password }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="province" class="form-label">จังหวัด</label>
+                        <select 
+                            class="form-select" 
+                            id="province" 
+                            v-model="selectedProvince"
+                            @change="fetchDistricts"
+                            required
+                        >
+                            <option value="">เลือกจังหวัด</option>
+                            <option 
+                                v-for="province in provinces" 
+                                :key="province" 
+                                :value="province"
+                            >
+                                {{ province }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="district" class="form-label">อำเภอ</label>
+                        <select 
+                            class="form-select" 
+                            id="district" 
+                            v-model="selectedDistrict"
+                            @change="fetchSubDistricts"
+                            :disabled="!selectedProvince"
+                            required
+                        >
+                            <option value="">เลือกอำเภอ</option>
+                            <option 
+                                v-for="district in districts" 
+                                :key="district" 
+                                :value="district"
+                            >
+                                {{ district }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="subDistrict" class="form-label">ตำบล</label>
+                        <select 
+                            class="form-select" 
+                            id="subDistrict" 
+                            v-model="formData.sub_district"
+                            :disabled="!selectedDistrict"
+                            required
+                        >
+                            <option value="">เลือกตำบล</option>
+                            <option 
+                                v-for="subDistrict in subDistricts" 
+                                :key="subDistrict" 
+                                :value="subDistrict"
+                            >
+                                {{ subDistrict }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary">ลงทะเบียน</button>
+                </div>
+
+                <div 
+                    v-if="submitMessage" 
+                    :class="['alert text-center', submitMessage.type]"
+                >
+                    {{ submitMessage.text }}
+                </div>
+                <div class="text-center mt-3">
+                    <p class="small">
+                        มีบัญชีอยู่แล้ว? 
+                        <a href="login.html" class="register-link">เข้าสู่ระบบ</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <script>
+        // (The entire previous JavaScript remains the same, no changes needed)
+        const { createApp, ref } = Vue;
+
+        createApp({
+            setup() {
+                const formData = ref({
+                    username: '',
+                    password: '',
+                    email: '',
+                    province: '',
+                    district: '',
+                    sub_district: ''
+                });
+
+                const provinces = ref([]);
+                const districts = ref([]);
+                const subDistricts = ref([]);
+                const selectedProvince = ref('');
+                const selectedDistrict = ref('');
+                const validationErrors = ref({});
+                const submitMessage = ref(null);
+
+                // Fetch provinces on component mount
+                axios.get('https://express-test-api-l0zc.onrender.com/provinces')
+                    .then(response => {
+                        provinces.value = response.data;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching provinces:', error);
+                    });
+
+                const fetchDistricts = () => {
+                    formData.value.district = '';
+                    formData.value.sub_district = '';
+                    districts.value = [];
+                    subDistricts.value = [];
+
+                    if (selectedProvince.value) {
+                        axios.get(`https://express-test-api-l0zc.onrender.com/provinces/${selectedProvince.value}`)
+                            .then(response => {
+                                districts.value = response.data;
+                            })
+                            .catch(error => {
+                                console.error('Error fetching districts:', error);
+                            });
+                    }
+                };
+
+                const fetchSubDistricts = () => {
+                    formData.value.sub_district = '';
+                    subDistricts.value = [];
+
+                    if (selectedDistrict.value) {
+                        axios.get(`https://express-test-api-l0zc.onrender.com/provinces/${selectedProvince.value}/${selectedDistrict.value}`)
+                            .then(response => {
+                                subDistricts.value = response.data;
+                            })
+                            .catch(error => {
+                                console.error('Error fetching sub-districts:', error);
+                            });
+                    }
+                };
+
+                const validateForm = () => {
+                    validationErrors.value = {};
+
+                    if (!formData.value.username) {
+                        validationErrors.value.username = 'กรุณาระบุชื่อผู้ใช้';
+                    }
+
+                    if (!formData.value.email) {
+                        validationErrors.value.email = 'กรุณาระบุอีเมล';
+                    } else if (!/\S+@\S+\.\S+/.test(formData.value.email)) {
+                        validationErrors.value.email = 'รูปแบบอีเมลไม่ถูกต้อง';
+                    }
+
+                    if (!formData.value.password) {
+                        validationErrors.value.password = 'กรุณาระบุรหัสผ่าน';
+                    } else if (formData.value.password.length < 6) {
+                        validationErrors.value.password = 'รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร';
+                    }
+
+                    return Object.keys(validationErrors.value).length === 0;
+                };
+
+                const submitForm = () => {
+                    if (validateForm()) {
+                        // Set province, district values
+                        formData.value.province = selectedProvince.value;
+                        formData.value.district = selectedDistrict.value;
+
+                        axios.post('https://express-test-api-l0zc.onrender.com/register', formData.value)
+                            .then(response => {
+                                submitMessage.value = {
+                                    type: 'alert-success',
+                                    text: 'ลงทะเบียนสำเร็จ!'
+                                };
+                                // Reset form after successful submission
+                                formData.value = {
+                                    username: '',
+                                    password: '',
+                                    email: '',
+                                    province: '',
+                                    district: '',
+                                    sub_district: ''
+                                };
+                                selectedProvince.value = '';
+                                selectedDistrict.value = '';
+                            })
+                            .catch(error => {
+                                submitMessage.value = {
+                                    type: 'alert-danger',
+                                    text: error.response?.data?.message || 'การลงทะเบียนล้มเหลว'
+                                };
+                            });
+                    }
+                };
+
+                return {
+                    formData,
+                    provinces,
+                    districts,
+                    subDistricts,
+                    selectedProvince,
+                    selectedDistrict,
+                    validationErrors,
+                    submitMessage,
+                    fetchDistricts,
+                    fetchSubDistricts,
+                    submitForm
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
